@@ -1,11 +1,11 @@
 {
   "name": "Reaction Hero",
   "short_name": "RHero",
-  "description": "Tap when the screen turns green and beat the global leaderboard!",
+  "description": "Tap when the screen turns green and save your local highscore",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#202124",
+  "background_color": "#121212",
   "theme_color": "#34d399",
   "icons": [
     {
