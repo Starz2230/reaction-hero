@@ -2,43 +2,58 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <!-- Viewport für responsives Verhalten -->
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Reaction Hero ⚡</title>
-  <link rel="manifest" href="manifest.json">
+  <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="style.css" />
-  <script defer src="firebase-config.js"></script><!-- Firebase SDK -->
+  <!-- Firebase SDK -->
+  <script defer src="firebase-config.js"></script>
+  <!-- Unser Spiel-Skript -->
   <script defer src="app.js"></script>
 </head>
 <body>
-  <!-- Name modal (hidden after first entry / skip) -->
-  <dialog id="nameModal">
-    <form id="nameForm">
-      <label>
-        Your nickname (optional):<br />
-        <input id="playerName" type="text" maxlength="20"
-               placeholder="Anonymous" autocomplete="off" />
-      </label>
-      <button>Start</button>
+  <!-- 1) Name-Modal, wird sichtbar, wenn noch kein Name gesetzt -->
+  <dialog id="nameModal" class="modal">
+    <form id="nameForm" class="modal-content">
+      <h2>Enter your nickname</h2>
+      <input
+        id="playerName"
+        type="text"
+        maxlength="20"
+        placeholder="Anonymous"
+        autocomplete="off"
+      />
+      <div class="modal-buttons">
+        <button type="submit">Start Game</button>
+      </div>
     </form>
   </dialog>
 
-  <!-- Game UI -->
-  <button id="screen" class="wait">Wait…</button>
-  <p id="result"></p>
+  <!-- 2) Haupt-Container -->
+  <div class="container">
+    <!-- 2a) Spiel-Bereich -->
+    <div class="game-area">
+      <button id="screen" class="screen wait">Wait…</button>
+      <p id="result" class="result-text"></p>
+    </div>
 
-  <!-- Local best-of-5 -->
-  <h2>Your Records</h2>
-  <ol id="localBoard"></ol>
+    <!-- 2b) Scoreboards -->
+    <div class="boards">
+      <!-- Lokales Scoreboard (immer sichtbar) -->
+      <section class="board local-board">
+        <h2>Your Records</h2>
+        <ol id="localBoard"></ol>
+      </section>
 
-  <!-- Global top-10 -->
-  <h2>Global Leaderboard</h2>
-  <ol id="globalBoard"><li>Loading…</li></ol>
-
-  <script>
-    // show modal only on first visit
-    if (!localStorage.getItem('playerNameShown')) {
-      nameModal.showModal();
-    }
-  </script>
+      <!-- Globales Leaderboard (zuerst versteckt, erscheint nach erstem Spiel) -->
+      <section id="globalSection" class="board global-board" style="display: none;">
+        <h2>Global Leaderboard</h2>
+        <ol id="globalBoard">
+          <li>Loading…</li>
+        </ol>
+      </section>
+    </div>
+  </div>
 </body>
 </html>
