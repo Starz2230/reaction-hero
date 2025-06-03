@@ -1,59 +1,355 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <!-- Viewport für responsives Verhalten -->
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8">
+  <!-- Viewport für responsive Darstellung -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Reaction Hero ⚡</title>
-  <link rel="manifest" href="manifest.json" />
-  <link rel="stylesheet" href="style.css" />
-  <!-- Firebase SDK -->
-  <script defer src="firebase-config.js"></script>
-  <!-- Unser Spiel-Skript -->
-  <script defer src="app.js"></script>
+
+  <!-- Manifest (falls du es brauchst, kannst du es unverändert beibehalten) -->
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Direktes CSS für dunkles Design -->
+  <style>
+    /* Reset-Basics */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    html, body {
+      height: 100%;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #121212;
+      color: #e0e0e0;
+    }
+
+    /* Container zentriert alles vertikal und horizontal */
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+    }
+
+    /* Haupt-Wrapper */
+    #wrapper {
+      width: 100%;
+      max-width: 480px;
+    }
+
+    /* Überschrift */
+    h1 {
+      text-align: center;
+      font-size: 1.75rem;
+      margin-bottom: 1.5rem;
+      color: #ffffff;
+    }
+
+    /* Spielbereich */
+    #screen {
+      display: block;
+      width: 200px;
+      height: 200px;
+      margin: 0 auto;
+      border: none;
+      border-radius: 50%;
+      background-color: #b71c1c; /* dunkelrot */
+      color: #ffffff;
+      font-size: 1.5rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.2s, transform 0.1s;
+      user-select: none;
+    }
+    #screen.go {
+      background-color: #1b5e20; /* dunkelgrün */
+    }
+    #screen:active {
+      transform: scale(0.95);
+    }
+
+    /* Ergebnisanzeige */
+    #result {
+      text-align: center;
+      font-size: 1.25rem;
+      margin-top: 1rem;
+      height: 1.5em;
+      color: #ffffff;
+    }
+
+    /* Lokales Scoreboard */
+    #localBoardContainer {
+      margin-top: 2rem;
+      background-color: #1e1e1e;
+      border-radius: 8px;
+      padding: 1rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+    #localBoardContainer h2 {
+      font-size: 1.25rem;
+      margin-bottom: 0.75rem;
+      color: #fafafa;
+    }
+    #localBoard {
+      list-style: decimal inside;
+      color: #e0e0e0;
+    }
+    #localBoard li {
+      margin-bottom: 0.4rem;
+      font-size: 1rem;
+    }
+
+    /* Globales Leaderboard (initial versteckt) */
+    #globalSection {
+      margin-top: 1.5rem;
+      background-color: #1e1e1e;
+      border-radius: 8px;
+      padding: 1rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+      display: none;
+    }
+    #globalSection h2 {
+      font-size: 1.25rem;
+      margin-bottom: 0.75rem;
+      color: #fafafa;
+    }
+    #globalBoard li {
+      margin-bottom: 0.4rem;
+      font-size: 1rem;
+      color: #e0e0e0;
+    }
+
+    /* Button für Leaderboard-Aktualisierung */
+    #refreshGlobal {
+      display: block;
+      margin: 0.75rem auto 0;
+      background-color: #0d47a1;
+      color: #ffffff;
+      border: none;
+      border-radius: 4px;
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      font-size: 0.9rem;
+    }
+    #refreshGlobal:hover {
+      background-color: #1565c0;
+    }
+
+    /* Bei größeren Bildschirmen ein wenig mehr Innenabstand */
+    @media (min-width: 600px) {
+      #screen {
+        width: 240px;
+        height: 240px;
+        font-size: 1.75rem;
+      }
+      #wrapper {
+        padding: 1rem;
+      }
+    }
+  </style>
 </head>
 <body>
-  <!-- 1) Name-Modal, wird sichtbar, wenn noch kein Name gesetzt -->
-  <dialog id="nameModal" class="modal">
-    <form id="nameForm" class="modal-content">
-      <h2>Enter your nickname</h2>
-      <input
-        id="playerName"
-        type="text"
-        maxlength="20"
-        placeholder="Anonymous"
-        autocomplete="off"
-      />
-      <div class="modal-buttons">
-        <button type="submit">Start Game</button>
-      </div>
-    </form>
-  </dialog>
+  <div id="wrapper">
+    <!-- Überschrift -->
+    <h1>Reaction Hero ⚡</h1>
 
-  <!-- 2) Haupt-Container -->
-  <div class="container">
-    <!-- 2a) Spiel-Bereich -->
-    <div class="game-area">
-      <button id="screen" class="screen wait">Wait…</button>
-      <p id="result" class="result-text"></p>
+    <!-- Spiel-Button -->
+    <button id="screen" class="wait">Wait…</button>
+    <p id="result"></p>
+
+    <!-- Lokales Scoreboard -->
+    <div id="localBoardContainer">
+      <h2>Your Records</h2>
+      <ol id="localBoard">
+        <!-- Lokale Best-Zeiten werden hier eingetragen -->
+      </ol>
     </div>
 
-    <!-- 2b) Scoreboards -->
-    <div class="boards">
-      <!-- Lokales Scoreboard (immer sichtbar) -->
-      <section class="board local-board">
-        <h2>Your Records</h2>
-        <ol id="localBoard"></ol>
-      </section>
-
-      <!-- Globales Leaderboard (zuerst versteckt, erscheint nach erstem Spiel) -->
-      <section id="globalSection" class="board global-board" style="display: none;">
-        <h2>Global Leaderboard</h2>
-        <ol id="globalBoard">
-          <li>Loading…</li>
-        </ol>
-      </section>
+    <!-- Globales Leaderboard -->
+    <div id="globalSection">
+      <h2>Global Leaderboard</h2>
+      <ol id="globalBoard">
+        <li>Loading…</li>
+      </ol>
+      <button id="refreshGlobal">Refresh Leaderboard</button>
     </div>
   </div>
+
+  <!-- ----------------------------
+       JavaScript: Spiel-Logik + Firebase
+       ---------------------------- -->
+  <script type="module">
+    // ---------- Firebase initialisieren ----------
+    import { initializeApp } 
+      from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs }
+      from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+
+    // Deine Firebase-Konfigurationsdaten hier einfügen:
+    const firebaseConfig = {
+      apiKey:            "DEIN_API_KEY",
+      authDomain:        "DEIN_PROJEKT.firebaseapp.com",
+      projectId:         "DEIN_PROJEKT",
+      storageBucket:     "DEIN_PROJEKT.appspot.com",
+      messagingSenderId: "1234567890",
+      appId:             "1:1234567890:web:abcdef123456"
+    };
+
+    // Firebase App & Firestore-Datenbank erstellen
+    const app = initializeApp(firebaseConfig);
+    const db  = getFirestore(app);
+    const scoresRef = collection(db, "scores");
+
+    // ---------- Elemente aus dem DOM holen ----------
+    const screen       = document.getElementById("screen");
+    const resultP      = document.getElementById("result");
+    const localBoardEl = document.getElementById("localBoard");
+    const globalSection= document.getElementById("globalSection");
+    const globalBoardEl= document.getElementById("globalBoard");
+    const refreshBtn   = document.getElementById("refreshGlobal");
+
+    // ---------- Variablen für das Spiel ----------
+    let startTime;
+    let playerName = localStorage.getItem("playerName") || "";
+
+    // ---------- Name einmal per Prompt abfragen ----------
+    function askForName() {
+      if (!playerName) {
+        const name = prompt("Enter your nickname (or leave blank for 'Anonymous'):");
+        playerName = (name && name.trim()) ? name.trim() : "Anonymous";
+        localStorage.setItem("playerName", playerName);
+      }
+    }
+
+    // Beim Laden der Seite sofort Name abfragen und lokale Rangliste anzeigen
+    window.addEventListener("load", () => {
+      askForName();
+      showLocalBoard();
+    });
+
+    // ---------- Spiel starten (erste Runde) ----------
+    startRound();
+
+    // ---------- startRound(): Button in "Wait"-Zustand versetzen ----------
+    function startRound() {
+      screen.classList.remove("go");
+      screen.classList.add("wait");
+      screen.textContent = "Wait…";
+      resultP.textContent = "";
+
+      // Zufällige Wartezeit zwischen 1 und 4 Sekunden
+      const delay = 1000 + Math.random() * 3000;
+      setTimeout(() => {
+        screen.classList.remove("wait");
+        screen.classList.add("go");
+        screen.textContent = "Tap NOW!";
+        startTime = performance.now();
+      }, delay);
+    }
+
+    // ---------- Klick-Event auf den Button ----------
+    screen.addEventListener("click", async () => {
+      if (!screen.classList.contains("go")) {
+        // Zu früh geklickt → ignorieren
+        return;
+      }
+      // Reaktionszeit berechnen
+      const time = Math.floor(performance.now() - startTime);
+      resultP.textContent = `${time} ms`;
+
+      // 1) Lokalen Highscore speichern und anzeigen
+      saveLocalScore(time);
+      showLocalBoard();
+
+      // 2) Global-Section einblenden (falls noch nicht sichtbar)
+      if (globalSection.style.display === "none" || !globalSection.style.display) {
+        globalSection.style.display = "block";
+        // Sofort das Leaderboard laden
+        await loadGlobalBoard();
+      }
+
+      // 3) In Firestore speichern (wenn online)
+      maybeSendToCloud(time);
+
+      // Nächste Runde nach 1,5 Sekunden starten
+      setTimeout(startRound, 1500);
+    });
+
+    // ---------- Lokale Rangliste: Speichern & Anzeigen ----------
+    function saveLocalScore(time) {
+      const list = JSON.parse(localStorage.getItem("scores") || "[]");
+      list.push(time);
+      list.sort((a, b) => a - b);
+      localStorage.setItem("scores", JSON.stringify(list.slice(0, 5)));
+    }
+
+    function showLocalBoard() {
+      const list = JSON.parse(localStorage.getItem("scores") || "[]");
+      if (!list.length) {
+        localBoardEl.innerHTML = "<li>No records yet.</li>";
+        return;
+      }
+      localBoardEl.innerHTML = list.map(t => `<li>${t} ms</li>`).join("");
+    }
+
+    // ---------- Cloud-Funktion: Firestore speichern & laden ----------
+    async function maybeSendToCloud(time) {
+      if (!navigator.onLine) return queueOffline(time);
+      try {
+        await addDoc(scoresRef, {
+          name: playerName,
+          time,
+          ts: Date.now()
+        });
+        // Falls erfolgreich, Leaderboard neu laden
+        await loadGlobalBoard();
+        flushOfflineQueue();
+      } catch {
+        queueOffline(time);
+      }
+    }
+
+    // Offline-Queue für späteres Senden
+    function queueOffline(time) {
+      const q = JSON.parse(localStorage.getItem("queued") || "[]");
+      q.push(time);
+      localStorage.setItem("queued", JSON.stringify(q));
+    }
+
+    async function flushOfflineQueue() {
+      const q = JSON.parse(localStorage.getItem("queued") || "[]");
+      if (!q.length || !navigator.onLine) return;
+      for (const t of q) {
+        await maybeSendToCloud(t);
+      }
+      localStorage.removeItem("queued");
+    }
+
+    // Leaderboard aus Firestore holen (Top 10 nach schnellster Zeit)
+    async function loadGlobalBoard() {
+      try {
+        const q = query(scoresRef, orderBy("time"), limit(10));
+        const snap = await getDocs(q);
+        if (snap.empty) {
+          globalBoardEl.innerHTML = "<li>No global scores yet.</li>";
+          return;
+        }
+        globalBoardEl.innerHTML = snap.docs.map(doc => {
+          const d = doc.data();
+          return `<li>${d.name}: <strong>${d.time} ms</strong></li>`;
+        }).join("");
+      } catch {
+        globalBoardEl.innerHTML = "<li>Could not load leaderboard.</li>";
+      }
+    }
+
+    // “Refresh Leaderboard”-Button
+    refreshBtn.addEventListener("click", loadGlobalBoard);
+
+    // Wenn wieder online, Offline-Queue versuchen zu senden
+    window.addEventListener("online", flushOfflineQueue);
+  </script>
 </body>
 </html>
