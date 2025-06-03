@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Reaction Hero ⚡</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css" />
+  <script defer src="firebase-config.js"></script><!-- Firebase SDK -->
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <!-- Name modal (hidden after first entry / skip) -->
+  <dialog id="nameModal">
+    <form id="nameForm">
+      <label>
+        Your nickname (optional):<br />
+        <input id="playerName" type="text" maxlength="20"
+               placeholder="Anonymous" autocomplete="off" />
+      </label>
+      <button>Start</button>
+    </form>
+  </dialog>
+
+  <!-- Game UI -->
+  <button id="screen" class="wait">Wait…</button>
+  <p id="result"></p>
+
+  <!-- Local best-of-5 -->
+  <h2>Your Records</h2>
+  <ol id="localBoard"></ol>
+
+  <!-- Global top-10 -->
+  <h2>Global Leaderboard</h2>
+  <ol id="globalBoard"><li>Loading…</li></ol>
+
+  <script>
+    // show modal only on first visit
+    if (!localStorage.getItem('playerNameShown')) {
+      nameModal.showModal();
+    }
+  </script>
+</body>
+</html>
