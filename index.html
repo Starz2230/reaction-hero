@@ -2,17 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <!-- Viewport für responsive Darstellung -->
+  <!-- Viewport für korrektes Scaling auf Mobilgeräten -->
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Reaction Hero ⚡</title>
-
-  <!-- Manifest (optional, falls du es nutzen möchtest) -->
   <link rel="manifest" href="manifest.json">
 
-  <!-- Direkt eingebettetes CSS mit dunklem Design und einheitlichen Einrückungen -->
+  <!-- Inline-CSS für dunkles Design und Layout -->
   <style>
-    /* Reset-Basics */
-    * {
+    /* Reset & Box-Sizing */
+    *, *::before, *::after {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
@@ -30,15 +28,15 @@
       padding: 1rem;
     }
 
-    /* Wrapper zentriert alles */
+    /* Wrapper zentriert den Content */
     #wrapper {
       width: 100%;
       max-width: 480px;
+      text-align: center;
     }
 
     /* Titel */
     h1 {
-      text-align: center;
       font-size: 1.75rem;
       margin-bottom: 1.5rem;
       color: #ffffff;
@@ -47,9 +45,9 @@
     /* Spiel-Button */
     #screen {
       display: block;
+      margin: 0 auto;
       width: 200px;
       height: 200px;
-      margin: 0 auto;
       border: none;
       border-radius: 50%;
       background-color: #b71c1c; /* dunkelrot = “wait” */
@@ -67,18 +65,16 @@
       transform: scale(0.95);
     }
 
-    /* Ergebnisanzeige */
+    /* Ergebnis-Anzeige */
     #result {
-      text-align: center;
-      font-size: 1.25rem;
       margin-top: 1rem;
+      font-size: 1.25rem;
       height: 1.5em;
       color: #ffffff;
     }
 
     /* Start/Stop-Button */
     #startStopBtn {
-      display: block;
       margin: 1rem auto 0;
       background-color: #0d47a1;
       color: #ffffff;
@@ -100,54 +96,23 @@
       border-radius: 8px;
       padding: 1rem;
       box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+      text-align: left;
     }
     #localBoardContainer h2 {
       font-size: 1.25rem;
       margin-bottom: 0.75rem;
       color: #fafafa;
     }
-    /* Einheitliche Listeneinrückung */
-    #localBoard, #globalBoard {
+    /* Einheitliche Einrückung der Listenpunkte */
+    #localBoard {
       list-style: decimal inside;
       padding-left: 0;
       margin-left: 0;
       color: #e0e0e0;
     }
-    #localBoard li, #globalBoard li {
+    #localBoard li {
       margin-bottom: 0.4rem;
       font-size: 1rem;
-    }
-
-    /* Globales Leaderboard (erst nach erstem Spiel sichtbar) */
-    #globalSection {
-      margin-top: 1.5rem;
-      background-color: #1e1e1e;
-      border-radius: 8px;
-      padding: 1rem;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.5);
-      display: none;
-    }
-    #globalSection h2 {
-      font-size: 1.25rem;
-      margin-bottom: 0.75rem;
-      color: #fafafa;
-    }
-
-    /* Refresh-Button für Leaderboard */
-    #refreshGlobal {
-      display: block;
-      margin: 0.75rem auto 0;
-      background-color: #0d47a1;
-      color: #ffffff;
-      border: none;
-      border-radius: 4px;
-      padding: 0.5rem 1rem;
-      cursor: pointer;
-      transition: background-color 0.2s;
-      font-size: 0.9rem;
-    }
-    #refreshGlobal:hover {
-      background-color: #1565c0;
     }
 
     /* Größere Darstellung auf breiteren Bildschirmen */
@@ -165,7 +130,7 @@
 </head>
 <body>
   <div id="wrapper">
-    <!-- Überschrift -->
+    <!-- Titel -->
     <h1>Reaction Hero ⚡</h1>
 
     <!-- Spiel-Button -->
@@ -179,89 +144,51 @@
     <div id="localBoardContainer">
       <h2>Your Records</h2>
       <ol id="localBoard">
-        <!-- Lokale Bestzeiten werden hier eingetragen -->
+        <!-- Lokale Best-Zeiten kommen hier rein -->
       </ol>
-    </div>
-
-    <!-- Globales Leaderboard (initial versteckt) -->
-    <div id="globalSection">
-      <h2>Global Leaderboard</h2>
-      <ol id="globalBoard">
-        <li>Loading…</li>
-      </ol>
-      <button id="refreshGlobal">Refresh Leaderboard</button>
     </div>
   </div>
 
   <!-- ----------------------------
-       JavaScript: Spiel-Logik + Firebase
+       JavaScript: Spiel-Logik (nur lokal)
        ---------------------------- -->
-  <script type="module">
-    // ---------- Firebase initialisieren ----------
-    import { initializeApp } 
-      from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs }
-      from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
-
-    // >>> Hier deine Firebase-Konfigurationsdaten einfügen <<<
-    const firebaseConfig = {
-      apiKey:            "DEIN_API_KEY",
-      authDomain:        "DEIN_PROJEKT.firebaseapp.com",
-      projectId:         "DEIN_PROJEKT",
-      storageBucket:     "DEIN_PROJEKT.appspot.com",
-      messagingSenderId: "1234567890",
-      appId:             "1:1234567890:web:abcdef123456"
-    };
-
-    // Firebase App & Firestore-Datenbank erstellen
-    const app = initializeApp(firebaseConfig);
-    const db  = getFirestore(app);
-    const scoresRef = collection(db, "scores");
-
-    // ---------- DOM-Elemente holen ----------
+  <script>
+    // DOM-Elemente holen
     const screen = document.getElementById("screen");
     const resultP = document.getElementById("result");
     const startStopBtn = document.getElementById("startStopBtn");
     const localBoardEl = document.getElementById("localBoard");
-    const globalSection = document.getElementById("globalSection");
-    const globalBoardEl = document.getElementById("globalBoard");
-    const refreshBtn = document.getElementById("refreshGlobal");
 
-    // ---------- Spiel-Variablen ----------
+    // Spiel-Variablen
     let startTime = 0;
     let timerId = null;
-    let gameActive = false;                // false = pausiert, true = Runde läuft gerade
-    let playerName = localStorage.getItem("playerName") || "";
+    let gameActive = false;                // false = pausiert / keine Runde läuft, true = Runde aktiv
+    let playerName = "";                   // Nur lokal, kann man weglassen oder nach Wunsch anpassen
 
-    // ---------- Name per Prompt abfragen ----------
+    // Name per prompt()-Abfrage (optional, speichert in localStorage, wird nicht weiter verwendet)
     function askForName() {
-      if (!playerName) {
-        const name = prompt("Enter your nickname (or leave blank for 'Anonymous'):");
-        playerName = (name && name.trim()) ? name.trim() : "Anonymous";
-        localStorage.setItem("playerName", playerName);
-      }
+      const name = prompt("Enter your nickname (or leave blank for 'Anonymous'):");
+      playerName = (name && name.trim()) ? name.trim() : "Anonymous";
+      localStorage.setItem("playerName", playerName);
     }
 
-    // Beim Laden der Seite: Name einmal abfragen + lokale Rangliste anzeigen
+    // Beim Laden der Seite: Namen abfragen / lokale Rangliste anzeigen
     window.addEventListener("load", () => {
       askForName();
       showLocalBoard();
-      // Der Start-Button bleibt auf “Start” (Runden starten erst per Klick)
+      // Hinweis: gameActive bleibt false, bis der Nutzer auf „Start“ klickt
     });
 
-    // ---------- Eine neue Runde starten ----------
+    // Funktion: Neue Runde starten (Button rot → grün nach Zufallsverzögerung)
     function startRound() {
-      // Schalte Spiel-Button in Warte-Status (rot)
       screen.classList.remove("go");
       screen.classList.add("wait");
       screen.textContent = "Wait…";
       resultP.textContent = "";
 
-      // Nach zufälliger Wartezeit Button grün setzen
-      const delay = 1000 + Math.random() * 3000;
+      const delay = 1000 + Math.random() * 3000; // 1–4 Sekunden
       timerId = setTimeout(() => {
-        // Nur, wenn gameActive immer noch true ist
-        if (!gameActive) return;
+        if (!gameActive) return; // Falls der Nutzer in der Zwischenzeit auf "Stop" geklickt hat
         screen.classList.remove("wait");
         screen.classList.add("go");
         screen.textContent = "Tap NOW!";
@@ -269,37 +196,26 @@
       }, delay);
     }
 
-    // ---------- Klick-Handler für den Spiel-Button ----------
-    screen.addEventListener("click", async () => {
-      // Wenn gerade keine Runde aktiv ist (noch nicht grün), nichts tun
-      if (!gameActive || !screen.classList.contains("go")) {
-        return;
-      }
-      // Reaktionszeit berechnen
+    // Klick-Handler für den Spiel-Button
+    screen.addEventListener("click", () => {
+      // Nur reagieren, wenn gerade eine Runde aktiv ist UND der Button grün ist
+      if (!gameActive || !screen.classList.contains("go")) return;
+
+      // Reaktionszeit bestimmen
       const time = Math.floor(performance.now() - startTime);
       resultP.textContent = `${time} ms`;
 
-      // 1) Lokalen Highscore speichern und anzeigen
+      // 1) Speichere in localStorage
       saveLocalScore(time);
       showLocalBoard();
 
-      // 2) Global-Bereich einblenden (wenn es der erste gültige Versuch ist)
-      if (globalSection.style.display === "none" || !globalSection.style.display) {
-        globalSection.style.display = "block";
-        await loadGlobalBoard();
-      }
-
-      // 3) In Firestore speichern (wenn online)
-      maybeSendToCloud(time);
-
-      // Runde ist vorbei: es startet nicht automatisch neu –
-      // du musst den Button “Start” erneut klicken.
+      // 2) Beende die Runde, Button wieder auf "Start"
       gameActive = false;
       startStopBtn.textContent = "Start";
       clearTimeout(timerId);
     });
 
-    // ---------- Klick-Handler für Start/Stop-Button ----------
+    // Klick-Handler für Start/Stop
     startStopBtn.addEventListener("click", () => {
       if (!gameActive) {
         // Starte eine neue Runde
@@ -307,10 +223,11 @@
         startStopBtn.textContent = "Stop";
         startRound();
       } else {
-        // Stoppe eine laufende Runde
+        // Stoppe die gerade laufende Runde
         gameActive = false;
         startStopBtn.textContent = "Start";
         clearTimeout(timerId);
+        // Button zurück in Wartezustand setzen
         screen.classList.remove("go");
         screen.classList.add("wait");
         screen.textContent = "Wait…";
@@ -318,13 +235,15 @@
       }
     });
 
-    // ---------- Lokale Rangliste: Speichern & Anzeigen ----------
+    // Speichern eines neuen Highscores in localStorage (Top 5)
     function saveLocalScore(time) {
       const list = JSON.parse(localStorage.getItem("scores") || "[]");
       list.push(time);
       list.sort((a, b) => a - b);
       localStorage.setItem("scores", JSON.stringify(list.slice(0, 5)));
     }
+
+    // Anzeigen der lokal gespeicherten Top-5
     function showLocalBoard() {
       const list = JSON.parse(localStorage.getItem("scores") || "[]");
       if (!list.length) {
@@ -334,54 +253,12 @@
       localBoardEl.innerHTML = list.map(t => `<li>${t} ms</li>`).join("");
     }
 
-    // ---------- Firestore-Funktionen: Speichern & Laden ----------
-    async function maybeSendToCloud(time) {
-      if (!navigator.onLine) return queueOffline(time);
-      try {
-        await addDoc(scoresRef, {
-          name: playerName,
-          time,
-          ts: Date.now()
-        });
-        await loadGlobalBoard();
-        flushOfflineQueue();
-      } catch {
-        queueOffline(time);
-      }
+    // Service Worker registrieren (wenn unterstützt)
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(err => console.log('SW error:', err));
+      });
     }
-    function queueOffline(time) {
-      const q = JSON.parse(localStorage.getItem("queued") || "[]");
-      q.push(time);
-      localStorage.setItem("queued", JSON.stringify(q));
-    }
-    async function flushOfflineQueue() {
-      const q = JSON.parse(localStorage.getItem("queued") || "[]");
-      if (!q.length || !navigator.onLine) return;
-      for (const t of q) {
-        await maybeSendToCloud(t);
-      }
-      localStorage.removeItem("queued");
-    }
-    async function loadGlobalBoard() {
-      try {
-        const q = query(scoresRef, orderBy("time"), limit(10));
-        const snap = await getDocs(q);
-        if (snap.empty) {
-          globalBoardEl.innerHTML = "<li>No global scores yet.</li>";
-          return;
-        }
-        globalBoardEl.innerHTML = snap.docs.map(doc => {
-          const d = doc.data();
-          return `<li>${d.name}: <strong>${d.time} ms</strong></li>`;
-        }).join("");
-      } catch {
-        globalBoardEl.innerHTML = "<li>Could not load leaderboard.</li>";
-      }
-    }
-    refreshBtn.addEventListener("click", loadGlobalBoard);
-
-    // Wenn wieder online, Offline-Puffer senden
-    window.addEventListener("online", flushOfflineQueue);
   </script>
 </body>
 </html>
