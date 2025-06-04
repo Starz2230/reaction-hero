@@ -1,13 +1,13 @@
-// Minimaler Service Worker für Offline-Caching
-
-const CACHE_NAME = 'reaction-hero-cache-v1';
+const CACHE_NAME = 'reaction-hero-cache-v2';
 const FILES_TO_CACHE = [
   './',
   './index.html',
-  './manifest.json'
+  './manifest.json',
+  './icons/icon-192.png',
+  './icons/icon-512.png'
 ];
 
-// Beim Install event: alle wichtigen Dateien in den Cache legen
+// Install: cache core files
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -16,7 +16,7 @@ self.addEventListener('install', event => {
   );
 });
 
-// Beim Activate event: alte Caches löschen, falls nötig
+// Activate: remove old caches if any
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
@@ -31,14 +31,11 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Beim Fetch event: versuche zuerst aus dem Cache, sonst hole aus dem Netzwerk
+// Fetch: respond from cache first, then network
 self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request).then(cachedRes => {
-      if (cachedRes) {
-        return cachedRes;
-      }
-      return fetch(event.request);
+      return cachedRes || fetch(event.request);
     })
   );
 });
