@@ -2,18 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <!-- Responsives Verhalten auf Mobilgeräten -->
+  <!-- Responsives Verhalten -->
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <title>Reaction Hero ⚡</title>
   <link rel="manifest" href="manifest.json">
 
-  <!-- iOS: Vollbildmodus ohne Safari‐Bars -->
+  <!-- iOS: Vollbildmodus ohne Safari-Bar -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
 
-  <!-- Inline‐CSS: dunkles Design, Layout, einheitliche Listen‐Einzüge -->
+  <!-- Inline-CSS: dunkles Design, Layout, einheitliche Listeneinrückung -->
   <style>
     *, *::before, *::after {
       margin: 0;
@@ -112,7 +112,7 @@
       border-radius: 8px;
       padding: 1rem;
       box-shadow: 0 2px 4px rgba(0,0,0,0.5);
-      display: none; /* zunächst verborgen */
+      display: none; /* versteckt, bis erster Score */
       text-align: left;
     }
     #globalSection h2 {
@@ -147,20 +147,19 @@
     }
   </style>
 
-  <!-- Firebase-SDK (modular v10) -->
-  <script defer type="module">
-    // 1) Importiere alle notwendigen Firebase-Funktionen
-    import { initializeApp }       from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+  <!-- Firebase-SDK und Spiel-Logik in einem einzigen Module-Skript -->
+  <script type="module">
+    // ─── 1) Importiere Firebase-Funktionen ───
+    import { initializeApp }           from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
     import { getFirestore,
              collection,
              addDoc,
              query,
              orderBy,
              limit,
-             getDocs }
-      from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+             getDocs }             from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
-    // 2) Deine Firebase-Konfiguration aus der Firebase Console
+    // ─── 2) Firebase-Konfiguration (aus Firebase Console kopieren) ───
     const firebaseConfig = {
       apiKey:            "AIzaSyAYlHpd0jPq5q5dBeofV5IARTBgDLwh2TI",
       authDomain:        "reaction-hero-3fc36.firebaseapp.com",
@@ -171,52 +170,14 @@
       measurementId:     "G-23H7PMGQDF"
     };
 
-    // 3) Firebase initialisieren
+    // ─── 3) Firebase initialisieren ───
     const app = initializeApp(firebaseConfig);
     const db  = getFirestore(app);
 
-    // 4) Mache Firestore-Refs global verfügbar für das nicht-modulare Skript
-    window._db         = db;
-    window._collection = collection;
-    window._addDoc     = addDoc;
-    window._query      = query;
-    window._orderBy    = orderBy;
-    window._limit      = limit;
-    window._getDocs    = getDocs;
-  </script>
-</head>
-<body>
-  <div id="wrapper">
-    <h1>Reaction Hero ⚡</h1>
+    // ─── 4) Referenz auf ‘scores’-Collection ───
+    const scoresRef = collection(db, "scores");
 
-    <!-- Spiel-Button -->
-    <button id="screen" class="wait">Wait…</button>
-    <p id="result"></p>
-
-    <!-- Start/Stop-Button -->
-    <button id="startStopBtn">Start</button>
-
-    <!-- Lokales Highscore -->
-    <div id="localBoardContainer">
-      <h2>Your Records</h2>
-      <ol id="localBoard">
-        <!-- Top 5 lokal erscheinen hier -->
-      </ol>
-    </div>
-
-    <!-- Globales Leaderboard (zunächst verborgen) -->
-    <div id="globalSection">
-      <h2>Global Leaderboard</h2>
-      <ol id="globalBoard">
-        <li>Loading…</li>
-      </ol>
-      <button id="refreshGlobal">Refresh Leaderboard</button>
-    </div>
-  </div>
-
-  <!-- Spiel-Logik + Firestore-Integration -->
-  <script>
-    // === DOM‐Elemente holen ===
+    // ─── 5) DOM-Elemente holen ───
     const screen        = document.getElementById("screen");
     const resultP       = document.getElementById("result");
     const startStopBtn  = document.getElementById("startStopBtn");
@@ -225,39 +186,26 @@
     const globalBoardEl = document.getElementById("globalBoard");
     const refreshBtn    = document.getElementById("refreshGlobal");
 
-    // === Firestore über window abrufen ===
-    const db         = window._db;
-    const collection = window._collection;
-    const addDoc     = window._addDoc;
-    const query      = window._query;
-    const orderBy    = window._orderBy;
-    const limit      = window._limit;
-    const getDocs    = window._getDocs;
-
-    // Referenz auf 'scores'-Collection
-    const scoresRef = collection(db, "scores");
-
-    // === Spiel-Variablen ===
+    // ─── 6) Spiel-Variablen ───
     let startTime  = 0;
     let timerId    = null;
     let gameActive = false;
     let playerName = "";
 
-    // === Nickname abfragen ===
+    // ─── 7) Nickname per prompt() abfragen ───
     function askForName() {
       const name = prompt("Enter your nickname (leave blank for 'Anonymous'):");
       playerName = (name && name.trim()) ? name.trim() : "Anonymous";
       localStorage.setItem("playerName", playerName);
     }
 
-    // Beim Laden: Name abfragen, lokale Rangliste anzeigen
     window.addEventListener("load", () => {
       askForName();
       showLocalBoard();
       // globalSection bleibt verborgen, bis erster Score
     });
 
-    // === Neue Runde starten ===
+    // ─── 8) Runde starten ───
     function startRound() {
       screen.classList.remove("go");
       screen.classList.add("wait");
@@ -274,23 +222,23 @@
       }, delay);
     }
 
-    // === Klick auf den Spiel-Button ===
+    // ─── 9) Klick auf den Spiel-Button ───
     screen.addEventListener("click", async () => {
       if (!gameActive || !screen.classList.contains("go")) return;
       const time = Math.floor(performance.now() - startTime);
       resultP.textContent = `${time} ms`;
 
-      // 1) Lokal speichern + Rangliste aktualisieren
+      // 1) Lokal speichern und anzeigen
       saveLocalScore(time);
       showLocalBoard();
 
-      // 2) Global-Panel anzeigen und laden (falls noch verborgen)
+      // 2) Global-Panel anzeigen und laden (falls verborgen)
       if (!globalSection.style.display || globalSection.style.display === "none") {
         globalSection.style.display = "block";
         await loadGlobalBoard();
       }
 
-      // 3) Score in Firestore schreiben
+      // 3) Hochladen in Firestore
       maybeSendToCloud(time);
 
       // Runde beenden
@@ -299,7 +247,7 @@
       clearTimeout(timerId);
     });
 
-    // === Klick auf Start/Stop-Button ===
+    // ─── 10) Klick auf Start/Stop-Button ───
     startStopBtn.addEventListener("click", () => {
       if (!gameActive) {
         gameActive = true;
@@ -316,7 +264,7 @@
       }
     });
 
-    // === Lokales Highscore (Top 5) ===
+    // ─── 11) Lokales Highscore (Top 5) speichern ───
     function saveLocalScore(time) {
       const list = JSON.parse(localStorage.getItem("scores") || "[]");
       list.push(time);
@@ -333,7 +281,7 @@
       localBoardEl.innerHTML = list.map(t => `<li>${t} ms</li>`).join("");
     }
 
-    // === Firestore: Score hochladen ===
+    // ─── 12) Firestore: Score hochladen ───
     async function maybeSendToCloud(time) {
       if (!navigator.onLine) return queueOffline(time);
       try {
@@ -350,7 +298,7 @@
       }
     }
 
-    // === Offline-Queue für Scores ===
+    // ─── 13) Offline-Queue ───
     function queueOffline(time) {
       const q = JSON.parse(localStorage.getItem("queued") || "[]");
       q.push(time);
@@ -365,7 +313,7 @@
       localStorage.removeItem("queued");
     }
 
-    // === Firestore: Top 10 global laden ===
+    // ─── 14) Firestore: Top 10 global laden ───
     async function loadGlobalBoard() {
       try {
         const q = query(scoresRef, orderBy("time"), limit(10));
@@ -385,10 +333,10 @@
     }
     refreshBtn.addEventListener("click", loadGlobalBoard);
 
-    // Wenn wieder online, alle gepufferten Scores hochladen
+    // Wenn wieder online, Offline-Queue abarbeiten
     window.addEventListener("online", flushOfflineQueue);
 
-    // === Service Worker registrieren ===
+    // ─── 15) Service Worker registrieren ───
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js').catch(err => console.error('SW error:', err));
