@@ -2,18 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <!-- Responsive viewport -->
+  <!-- Make it responsive on mobile -->
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <title>Reaction Hero ⚡</title>
   <link rel="manifest" href="manifest.json">
 
-  <!-- iOS: Run as standalone without browser bars -->
+  <!-- iOS: run fullscreen without browser bars -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
 
-  <!-- Inline CSS: dark theme, layout, and unified list indentation -->
+  <!-- Inline CSS: dark theme, layout, unified list indentation -->
   <style>
     *, *::before, *::after {
       margin: 0;
@@ -147,13 +147,16 @@
     }
   </style>
 
-  <!-- Firebase SDK (modular) -->
+  <!-- Firebase SDK (modular v10) -->
   <script defer type="module">
-    // 1. Import only what we need from Firebase v9+
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-    import { getFirestore }  from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+    // 1) Import Firebase modules
+    import { initializeApp }       from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+    import { getFirestore, 
+             collection, addDoc, 
+             query, orderBy, limit, 
+             getDocs }             from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
-    // 2. Your web app’s Firebase configuration (copy‐pasted from Firebase Console)
+    // 2) Your Firebase config (from Firebase Console → Project settings → General → Your apps → SDK snippet)
     const firebaseConfig = {
       apiKey:            "AIzaSyAYlHpd0jPq5q5dBeofV5IARTBgDLwh2TI",
       authDomain:        "reaction-hero-3fc36.firebaseapp.com",
@@ -164,12 +167,18 @@
       measurementId:     "G-23H7PMGQDF"
     };
 
-    // 3. Initialize Firebase App & Firestore
+    // 3) Initialize Firebase and Firestore
     const app = initializeApp(firebaseConfig);
     const db  = getFirestore(app);
 
-    // 4. Make Firestore available globally via window._db
-    window._db = db;
+    // 4) Expose Firestore methods globally so our non-module script can use them
+    window._db        = db;
+    window._collection = collection;
+    window._addDoc     = addDoc;
+    window._query      = query;
+    window._orderBy    = orderBy;
+    window._limit      = limit;
+    window._getDocs    = getDocs;
   </script>
 </head>
 <body>
@@ -201,9 +210,9 @@
     </div>
   </div>
 
-  <!-- Game Logic + Firestore Integration (no build tools needed) -->
+  <!-- Game Logic + Firestore Integration -->
   <script>
-    // === DOM References ===
+    // === Get DOM references ===
     const screen        = document.getElementById("screen");
     const resultP       = document.getElementById("result");
     const startStopBtn  = document.getElementById("startStopBtn");
@@ -212,34 +221,39 @@
     const globalBoardEl = document.getElementById("globalBoard");
     const refreshBtn    = document.getElementById("refreshGlobal");
 
-    // === Firestore Setup ===
-    // Import Firestore functions from the global Firestore object
-    const { collection, addDoc, query, orderBy, limit, getDocs } = window.firebaseFirestore || {};
-    // Grab the initialized Firestore instance
+    // === Grab Firestore and methods from window ===
     const db        = window._db;
-    const scoresRef = collection(db, "scores"); // Points to 'scores' collection
+    const collection = window._collection;
+    const addDoc     = window._addDoc;
+    const query      = window._query;
+    const orderBy    = window._orderBy;
+    const limit      = window._limit;
+    const getDocs    = window._getDocs;
 
-    // === Game State Variables ===
+    // Reference to the 'scores' collection
+    const scoresRef = collection(db, "scores");
+
+    // === Game State ===
     let startTime  = 0;
     let timerId    = null;
     let gameActive = false;
     let playerName = "";
 
-    // === Prompt for Nickname ===
+    // === Prompt for nickname ===
     function askForName() {
       const name = prompt("Enter your nickname (leave blank for 'Anonymous'):");
       playerName = (name && name.trim()) ? name.trim() : "Anonymous";
       localStorage.setItem("playerName", playerName);
     }
 
-    // On page load: ask for name and show local highscore
+    // On load: prompt for name, show local scoreboard
     window.addEventListener("load", () => {
       askForName();
       showLocalBoard();
-      // globalSection is still hidden until the first valid score
+      // globalSection remains hidden until first valid score
     });
 
-    // === Start a New Round ===
+    // === Start a new round ===
     function startRound() {
       screen.classList.remove("go");
       screen.classList.add("wait");
@@ -248,7 +262,6 @@
 
       const delay = 1000 + Math.random() * 3000; // 1–4 seconds
       timerId = setTimeout(() => {
-        // Only turn green if gameActive is still true
         if (!gameActive) return;
         screen.classList.remove("wait");
         screen.classList.add("go");
@@ -257,26 +270,23 @@
       }, delay);
     }
 
-    // === Handle Click on the Game Button ===
+    // === Handle tap on the game button ===
     screen.addEventListener("click", async () => {
-      // Must be running and currently green to count as a valid tap
       if (!gameActive || !screen.classList.contains("go")) return;
-
-      // Calculate reaction time
       const time = Math.floor(performance.now() - startTime);
       resultP.textContent = `${time} ms`;
 
-      // 1) Save locally and update local scoreboard
+      // 1) Save locally
       saveLocalScore(time);
       showLocalBoard();
 
-      // 2) Show global section (first time) and fetch global leaderboard
+      // 2) Reveal global section and load global scoreboard
       if (!globalSection.style.display || globalSection.style.display === "none") {
         globalSection.style.display = "block";
         await loadGlobalBoard();
       }
 
-      // 3) Upload to Firestore (if online)
+      // 3) Upload to Firestore
       maybeSendToCloud(time);
 
       // End the round
@@ -285,15 +295,13 @@
       clearTimeout(timerId);
     });
 
-    // === Handle Start/Stop Button ===
+    // === Handle Start/Stop click ===
     startStopBtn.addEventListener("click", () => {
       if (!gameActive) {
-        // Begin a new round
         gameActive = true;
         startStopBtn.textContent = "Stop";
         startRound();
       } else {
-        // Cancel the current round
         gameActive = false;
         startStopBtn.textContent = "Start";
         clearTimeout(timerId);
@@ -321,8 +329,7 @@
       localBoardEl.innerHTML = list.map(t => `<li>${t} ms</li>`).join("");
     }
 
-    // === Firestore Integration ===
-    // Attempt to upload score to Firestore if online
+    // === Firestore: Upload global score ===
     async function maybeSendToCloud(time) {
       if (!navigator.onLine) return queueOffline(time);
       try {
@@ -339,13 +346,12 @@
       }
     }
 
-    // Offline queue: store scores locally if offline, for later upload
+    // === Offline queue (store if offline) ===
     function queueOffline(time) {
       const q = JSON.parse(localStorage.getItem("queued") || "[]");
       q.push(time);
       localStorage.setItem("queued", JSON.stringify(q));
     }
-
     async function flushOfflineQueue() {
       const q = JSON.parse(localStorage.getItem("queued") || "[]");
       if (!q.length || !navigator.onLine) return;
@@ -355,7 +361,7 @@
       localStorage.removeItem("queued");
     }
 
-    // Load top 10 scores globally from Firestore (sorted by fastest time)
+    // === Firestore: Load top 10 global scores ===
     async function loadGlobalBoard() {
       try {
         const q = query(scoresRef, orderBy("time"), limit(10));
@@ -374,10 +380,10 @@
       }
     }
 
-    // Refresh button for manual reload
+    // Refresh button
     refreshBtn.addEventListener("click", loadGlobalBoard);
 
-    // When connectivity returns, flush any offline‐queued scores
+    // When going back online, flush the offline queue
     window.addEventListener("online", flushOfflineQueue);
 
     // === Register Service Worker for offline caching ===
