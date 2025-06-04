@@ -1,7 +1,7 @@
 {
   "name": "Reaction Hero",
   "short_name": "RHero",
-  "description": "Tap when the screen turns green and save your local highscore",
+  "description": "Tap when the screen turns green—global ranking + offline support",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
