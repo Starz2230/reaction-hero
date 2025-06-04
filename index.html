@@ -2,18 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <!-- Make it responsive on mobile -->
+  <!-- Responsives Verhalten auf Mobilgeräten -->
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <title>Reaction Hero ⚡</title>
   <link rel="manifest" href="manifest.json">
 
-  <!-- iOS: run fullscreen without browser bars -->
+  <!-- iOS: Vollbildmodus ohne Safari‐Bars -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
 
-  <!-- Inline CSS: dark theme, layout, unified list indentation -->
+  <!-- Inline‐CSS: dunkles Design, Layout, einheitliche Listen‐Einzüge -->
   <style>
     *, *::before, *::after {
       margin: 0;
@@ -49,7 +49,7 @@
       height: 200px;
       border: none;
       border-radius: 50%;
-      background-color: #b71c1c; /* dark red “wait” */
+      background-color: #b71c1c; /* dunkelrot = “wait” */
       color: #ffffff;
       font-size: 1.5rem;
       font-weight: bold;
@@ -58,7 +58,7 @@
       user-select: none;
     }
     #screen.go {
-      background-color: #1b5e20; /* dark green “go” */
+      background-color: #1b5e20; /* dunkelgrün = “go” */
     }
     #screen:active {
       transform: scale(0.95);
@@ -112,7 +112,7 @@
       border-radius: 8px;
       padding: 1rem;
       box-shadow: 0 2px 4px rgba(0,0,0,0.5);
-      display: none; /* hidden until first score */
+      display: none; /* zunächst verborgen */
       text-align: left;
     }
     #globalSection h2 {
@@ -147,16 +147,20 @@
     }
   </style>
 
-  <!-- Firebase SDK (modular v10) -->
+  <!-- Firebase-SDK (modular v10) -->
   <script defer type="module">
-    // 1) Import Firebase modules
+    // 1) Importiere alle notwendigen Firebase-Funktionen
     import { initializeApp }       from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-    import { getFirestore, 
-             collection, addDoc, 
-             query, orderBy, limit, 
-             getDocs }             from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+    import { getFirestore,
+             collection,
+             addDoc,
+             query,
+             orderBy,
+             limit,
+             getDocs }
+      from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
-    // 2) Your Firebase config (from Firebase Console → Project settings → General → Your apps → SDK snippet)
+    // 2) Deine Firebase-Konfiguration aus der Firebase Console
     const firebaseConfig = {
       apiKey:            "AIzaSyAYlHpd0jPq5q5dBeofV5IARTBgDLwh2TI",
       authDomain:        "reaction-hero-3fc36.firebaseapp.com",
@@ -167,12 +171,12 @@
       measurementId:     "G-23H7PMGQDF"
     };
 
-    // 3) Initialize Firebase and Firestore
+    // 3) Firebase initialisieren
     const app = initializeApp(firebaseConfig);
     const db  = getFirestore(app);
 
-    // 4) Expose Firestore methods globally so our non-module script can use them
-    window._db        = db;
+    // 4) Mache Firestore-Refs global verfügbar für das nicht-modulare Skript
+    window._db         = db;
     window._collection = collection;
     window._addDoc     = addDoc;
     window._query      = query;
@@ -185,22 +189,22 @@
   <div id="wrapper">
     <h1>Reaction Hero ⚡</h1>
 
-    <!-- Game Button -->
+    <!-- Spiel-Button -->
     <button id="screen" class="wait">Wait…</button>
     <p id="result"></p>
 
-    <!-- Start/Stop Button -->
+    <!-- Start/Stop-Button -->
     <button id="startStopBtn">Start</button>
 
-    <!-- Local Highscore -->
+    <!-- Lokales Highscore -->
     <div id="localBoardContainer">
       <h2>Your Records</h2>
       <ol id="localBoard">
-        <!-- Local Top 5 will populate here -->
+        <!-- Top 5 lokal erscheinen hier -->
       </ol>
     </div>
 
-    <!-- Global Leaderboard (hidden until first score) -->
+    <!-- Globales Leaderboard (zunächst verborgen) -->
     <div id="globalSection">
       <h2>Global Leaderboard</h2>
       <ol id="globalBoard">
@@ -210,9 +214,9 @@
     </div>
   </div>
 
-  <!-- Game Logic + Firestore Integration -->
+  <!-- Spiel-Logik + Firestore-Integration -->
   <script>
-    // === Get DOM references ===
+    // === DOM‐Elemente holen ===
     const screen        = document.getElementById("screen");
     const resultP       = document.getElementById("result");
     const startStopBtn  = document.getElementById("startStopBtn");
@@ -221,8 +225,8 @@
     const globalBoardEl = document.getElementById("globalBoard");
     const refreshBtn    = document.getElementById("refreshGlobal");
 
-    // === Grab Firestore and methods from window ===
-    const db        = window._db;
+    // === Firestore über window abrufen ===
+    const db         = window._db;
     const collection = window._collection;
     const addDoc     = window._addDoc;
     const query      = window._query;
@@ -230,37 +234,37 @@
     const limit      = window._limit;
     const getDocs    = window._getDocs;
 
-    // Reference to the 'scores' collection
+    // Referenz auf 'scores'-Collection
     const scoresRef = collection(db, "scores");
 
-    // === Game State ===
+    // === Spiel-Variablen ===
     let startTime  = 0;
     let timerId    = null;
     let gameActive = false;
     let playerName = "";
 
-    // === Prompt for nickname ===
+    // === Nickname abfragen ===
     function askForName() {
       const name = prompt("Enter your nickname (leave blank for 'Anonymous'):");
       playerName = (name && name.trim()) ? name.trim() : "Anonymous";
       localStorage.setItem("playerName", playerName);
     }
 
-    // On load: prompt for name, show local scoreboard
+    // Beim Laden: Name abfragen, lokale Rangliste anzeigen
     window.addEventListener("load", () => {
       askForName();
       showLocalBoard();
-      // globalSection remains hidden until first valid score
+      // globalSection bleibt verborgen, bis erster Score
     });
 
-    // === Start a new round ===
+    // === Neue Runde starten ===
     function startRound() {
       screen.classList.remove("go");
       screen.classList.add("wait");
       screen.textContent = "Wait…";
       resultP.textContent = "";
 
-      const delay = 1000 + Math.random() * 3000; // 1–4 seconds
+      const delay = 1000 + Math.random() * 3000; // 1–4 Sekunden
       timerId = setTimeout(() => {
         if (!gameActive) return;
         screen.classList.remove("wait");
@@ -270,32 +274,32 @@
       }, delay);
     }
 
-    // === Handle tap on the game button ===
+    // === Klick auf den Spiel-Button ===
     screen.addEventListener("click", async () => {
       if (!gameActive || !screen.classList.contains("go")) return;
       const time = Math.floor(performance.now() - startTime);
       resultP.textContent = `${time} ms`;
 
-      // 1) Save locally
+      // 1) Lokal speichern + Rangliste aktualisieren
       saveLocalScore(time);
       showLocalBoard();
 
-      // 2) Reveal global section and load global scoreboard
+      // 2) Global-Panel anzeigen und laden (falls noch verborgen)
       if (!globalSection.style.display || globalSection.style.display === "none") {
         globalSection.style.display = "block";
         await loadGlobalBoard();
       }
 
-      // 3) Upload to Firestore
+      // 3) Score in Firestore schreiben
       maybeSendToCloud(time);
 
-      // End the round
+      // Runde beenden
       gameActive = false;
       startStopBtn.textContent = "Start";
       clearTimeout(timerId);
     });
 
-    // === Handle Start/Stop click ===
+    // === Klick auf Start/Stop-Button ===
     startStopBtn.addEventListener("click", () => {
       if (!gameActive) {
         gameActive = true;
@@ -312,7 +316,7 @@
       }
     });
 
-    // === Local Highscore (Top 5) ===
+    // === Lokales Highscore (Top 5) ===
     function saveLocalScore(time) {
       const list = JSON.parse(localStorage.getItem("scores") || "[]");
       list.push(time);
@@ -329,7 +333,7 @@
       localBoardEl.innerHTML = list.map(t => `<li>${t} ms</li>`).join("");
     }
 
-    // === Firestore: Upload global score ===
+    // === Firestore: Score hochladen ===
     async function maybeSendToCloud(time) {
       if (!navigator.onLine) return queueOffline(time);
       try {
@@ -346,7 +350,7 @@
       }
     }
 
-    // === Offline queue (store if offline) ===
+    // === Offline-Queue für Scores ===
     function queueOffline(time) {
       const q = JSON.parse(localStorage.getItem("queued") || "[]");
       q.push(time);
@@ -361,7 +365,7 @@
       localStorage.removeItem("queued");
     }
 
-    // === Firestore: Load top 10 global scores ===
+    // === Firestore: Top 10 global laden ===
     async function loadGlobalBoard() {
       try {
         const q = query(scoresRef, orderBy("time"), limit(10));
@@ -379,14 +383,12 @@
         globalBoardEl.innerHTML = "<li>Could not load leaderboard.</li>";
       }
     }
-
-    // Refresh button
     refreshBtn.addEventListener("click", loadGlobalBoard);
 
-    // When going back online, flush the offline queue
+    // Wenn wieder online, alle gepufferten Scores hochladen
     window.addEventListener("online", flushOfflineQueue);
 
-    // === Register Service Worker for offline caching ===
+    // === Service Worker registrieren ===
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js').catch(err => console.error('SW error:', err));
