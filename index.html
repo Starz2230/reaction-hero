@@ -8,338 +8,173 @@
   <title>Reaction Hero ⚡</title>
   <link rel="manifest" href="manifest.json">
 
-  <!-- iOS: Vollbildmodus ohne Safari-Bar -->
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
-
-  <!-- Inline-CSS: dunkles Design, Layout, einheitliche Listeneinrückung -->
+  <!-- Dunkles Design, Layout & Listeneinrückung -->
   <style>
-    *, *::before, *::after {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    html, body {
-      height: 100%;
-      background-color: #121212;
-      color: #e0e0e0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    body {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 1rem;
-    }
-    #wrapper {
-      width: 100%;
-      max-width: 480px;
-      text-align: center;
-    }
-    h1 {
-      font-size: 1.75rem;
-      margin-bottom: 1.5rem;
-      color: #ffffff;
-    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; background-color: #121212; color: #e0e0e0; font-family: 'Segoe UI', sans-serif; }
+    body { display: flex; justify-content: center; align-items: center; padding: 1rem; }
+    #wrapper { width: 100%; max-width: 480px; text-align: center; }
+
+    h1 { font-size: 1.75rem; margin-bottom: 1.5rem; }
+
     #screen {
-      display: block;
-      margin: 0 auto;
-      width: 200px;
-      height: 200px;
-      border: none;
-      border-radius: 50%;
-      background-color: #b71c1c; /* dunkelrot = “wait” */
-      color: #ffffff;
-      font-size: 1.5rem;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background-color 0.2s, transform 0.1s;
+      display: block; margin: 0 auto;
+      width: 200px; height: 200px;
+      border: none; border-radius: 50%;
+      background-color: #b71c1c; /* wait */
+      color: #fff;
+      font-size: 1.5rem; font-weight: bold;
+      cursor: pointer; transition: background-color .2s, transform .1s;
       user-select: none;
     }
-    #screen.go {
-      background-color: #1b5e20; /* dunkelgrün = “go” */
-    }
-    #screen:active {
-      transform: scale(0.95);
-    }
-    #result {
-      margin-top: 1rem;
-      font-size: 1.25rem;
-      height: 1.5em;
-      color: #ffffff;
-    }
+    #screen.go { background-color: #1b5e20; /* go */ }
+    #screen:active { transform: scale(0.95); }
+
+    #result { margin-top:1rem; font-size:1.25rem; height:1.5em; }
+
     #startStopBtn {
-      margin: 1rem auto 0;
-      background-color: #0d47a1;
-      color: #ffffff;
-      border: none;
-      border-radius: 4px;
-      padding: 0.5rem 1rem;
-      cursor: pointer;
-      transition: background-color 0.2s;
-      font-size: 1rem;
+      margin:1rem auto 0;
+      background:#0d47a1; color:#fff; border:none; border-radius:4px;
+      padding:.5rem 1rem; cursor:pointer; transition:background .2s; font-size:1rem;
     }
-    #startStopBtn:hover {
-      background-color: #1565c0;
-    }
+    #startStopBtn:hover { background:#1565c0; }
+
     #localBoardContainer {
-      margin-top: 2rem;
-      background-color: #1e1e1e;
-      border-radius: 8px;
-      padding: 1rem;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.5);
-      text-align: left;
+      margin-top:2rem;
+      background:#1e1e1e; border-radius:8px; padding:1rem;
+      box-shadow:0 2px 4px rgba(0,0,0,.5); text-align:left;
     }
     #localBoardContainer h2 {
-      font-size: 1.25rem;
-      margin-bottom: 0.75rem;
-      color: #fafafa;
+      font-size:1.25rem; margin-bottom:.75rem; color:#fafafa;
     }
     #localBoard, #globalBoard {
       list-style: decimal inside;
-      padding-left: 0;
-      margin-left: 0;
-      color: #e0e0e0;
+      padding-left:0; margin-left:0; color:#e0e0e0;
     }
     #localBoard li, #globalBoard li {
-      margin-bottom: 0.4rem;
-      font-size: 1rem;
+      margin-bottom:.4rem; font-size:1rem;
     }
-    #globalSection {
-      margin-top: 1.5rem;
-      background-color: #1e1e1e;
-      border-radius: 8px;
-      padding: 1rem;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.5);
-      display: none; /* versteckt, bis erster Score */
-      text-align: left;
-    }
-    #globalSection h2 {
-      font-size: 1.25rem;
-      margin-bottom: 0.75rem;
-      color: #fafafa;
-    }
-    #refreshGlobal {
-      display: block;
-      margin: 0.75rem auto 0;
-      background-color: #0d47a1;
-      color: #ffffff;
-      border: none;
-      border-radius: 4px;
-      padding: 0.5rem 1rem;
-      cursor: pointer;
-      transition: background-color 0.2s;
-      font-size: 0.9rem;
-    }
-    #refreshGlobal:hover {
-      background-color: #1565c0;
-    }
-    @media (min-width: 600px) {
-      #screen {
-        width: 240px;
-        height: 240px;
-        font-size: 1.75rem;
-      }
-      #wrapper {
-        padding: 1rem;
-      }
+
+    @media(min-width:600px) {
+      #screen { width:240px; height:240px; font-size:1.75rem; }
+      #wrapper { padding:1rem; }
     }
   </style>
+</head>
+<body>
+  <div id="wrapper">
+    <h1>Reaction Hero ⚡</h1>
 
-  <!-- Firebase-SDK und Spiel-Logik in einem einzigen Module-Skript -->
-  <script type="module">
-    // ─── 1) Importiere Firebase-Funktionen ───
-    import { initializeApp }           from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-    import { getFirestore,
-             collection,
-             addDoc,
-             query,
-             orderBy,
-             limit,
-             getDocs }             from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+    <!-- Spiel-Button -->
+    <button id="screen" class="wait">Wait…</button>
+    <p id="result"></p>
 
-    // ─── 2) Firebase-Konfiguration (aus Firebase Console kopieren) ───
-    const firebaseConfig = {
-      apiKey:            "AIzaSyAYlHpd0jPq5q5dBeofV5IARTBgDLwh2TI",
-      authDomain:        "reaction-hero-3fc36.firebaseapp.com",
-      projectId:         "reaction-hero-3fc36",
-      storageBucket:     "reaction-hero-3fc36.appspot.com",
-      messagingSenderId: "478308589535",
-      appId:             "1:478308589535:web:bb1d3915366a92ccfc6e6a",
-      measurementId:     "G-23H7PMGQDF"
-    };
+    <!-- Start/Stop-Kontrolle -->
+    <button id="startStopBtn">Start</button>
 
-    // ─── 3) Firebase initialisieren ───
-    const app = initializeApp(firebaseConfig);
-    const db  = getFirestore(app);
+    <!-- Lokales Highscore -->
+    <div id="localBoardContainer">
+      <h2>Your Records</h2>
+      <ol id="localBoard"></ol>
+    </div>
+  </div>
 
-    // ─── 4) Referenz auf ‘scores’-Collection ───
-    const scoresRef = collection(db, "scores");
+  <script>
+    // DOM-References
+    const screen = document.getElementById('screen');
+    const resultP = document.getElementById('result');
+    const startStopBtn = document.getElementById('startStopBtn');
+    const localBoardEl = document.getElementById('localBoard');
 
-    // ─── 5) DOM-Elemente holen ───
-    const screen        = document.getElementById("screen");
-    const resultP       = document.getElementById("result");
-    const startStopBtn  = document.getElementById("startStopBtn");
-    const localBoardEl  = document.getElementById("localBoard");
-    const globalSection = document.getElementById("globalSection");
-    const globalBoardEl = document.getElementById("globalBoard");
-    const refreshBtn    = document.getElementById("refreshGlobal");
-
-    // ─── 6) Spiel-Variablen ───
-    let startTime  = 0;
-    let timerId    = null;
+    // State
+    let startTime = 0;
+    let timerId = null;
     let gameActive = false;
-    let playerName = "";
+    let playerName = '';
 
-    // ─── 7) Nickname per prompt() abfragen ───
+    // Name abfragen
     function askForName() {
-      const name = prompt("Enter your nickname (leave blank for 'Anonymous'):");
-      playerName = (name && name.trim()) ? name.trim() : "Anonymous";
-      localStorage.setItem("playerName", playerName);
+      const name = prompt('Enter your nickname (or leave blank for "Anonymous"):');
+      playerName = name && name.trim() ? name.trim() : 'Anonymous';
+      localStorage.setItem('playerName', playerName);
     }
 
-    window.addEventListener("load", () => {
+    window.addEventListener('load', () => {
       askForName();
       showLocalBoard();
-      // globalSection bleibt verborgen, bis erster Score
     });
 
-    // ─── 8) Runde starten ───
+    // Runde starten
     function startRound() {
-      screen.classList.remove("go");
-      screen.classList.add("wait");
-      screen.textContent = "Wait…";
-      resultP.textContent = "";
+      screen.classList.remove('go');
+      screen.classList.add('wait');
+      screen.textContent = 'Wait…';
+      resultP.textContent = '';
 
-      const delay = 1000 + Math.random() * 3000; // 1–4 Sekunden
+      const delay = 1000 + Math.random() * 3000;
       timerId = setTimeout(() => {
         if (!gameActive) return;
-        screen.classList.remove("wait");
-        screen.classList.add("go");
-        screen.textContent = "Tap NOW!";
+        screen.classList.remove('wait');
+        screen.classList.add('go');
+        screen.textContent = 'Tap NOW!';
         startTime = performance.now();
       }, delay);
     }
 
-    // ─── 9) Klick auf den Spiel-Button ───
-    screen.addEventListener("click", async () => {
-      if (!gameActive || !screen.classList.contains("go")) return;
+    // Klick auf roten/grünen Kreis
+    screen.addEventListener('click', () => {
+      if (!gameActive || !screen.classList.contains('go')) return;
       const time = Math.floor(performance.now() - startTime);
       resultP.textContent = `${time} ms`;
 
-      // 1) Lokal speichern und anzeigen
       saveLocalScore(time);
       showLocalBoard();
 
-      // 2) Global-Panel anzeigen und laden (falls verborgen)
-      if (!globalSection.style.display || globalSection.style.display === "none") {
-        globalSection.style.display = "block";
-        await loadGlobalBoard();
-      }
-
-      // 3) Hochladen in Firestore
-      maybeSendToCloud(time);
-
-      // Runde beenden
       gameActive = false;
-      startStopBtn.textContent = "Start";
+      startStopBtn.textContent = 'Start';
       clearTimeout(timerId);
     });
 
-    // ─── 10) Klick auf Start/Stop-Button ───
-    startStopBtn.addEventListener("click", () => {
+    // Start/Stop-Knopf
+    startStopBtn.addEventListener('click', () => {
       if (!gameActive) {
         gameActive = true;
-        startStopBtn.textContent = "Stop";
+        startStopBtn.textContent = 'Stop';
         startRound();
       } else {
         gameActive = false;
-        startStopBtn.textContent = "Start";
+        startStopBtn.textContent = 'Start';
         clearTimeout(timerId);
-        screen.classList.remove("go");
-        screen.classList.add("wait");
-        screen.textContent = "Wait…";
-        resultP.textContent = "";
+        screen.classList.remove('go');
+        screen.classList.add('wait');
+        screen.textContent = 'Wait…';
+        resultP.textContent = '';
       }
     });
 
-    // ─── 11) Lokales Highscore (Top 5) speichern ───
+    // Lokaler Highscore
     function saveLocalScore(time) {
-      const list = JSON.parse(localStorage.getItem("scores") || "[]");
+      const list = JSON.parse(localStorage.getItem('scores') || '[]');
       list.push(time);
-      list.sort((a, b) => a - b);
-      localStorage.setItem("scores", JSON.stringify(list.slice(0, 5)));
+      list.sort((a,b) => a-b);
+      localStorage.setItem('scores', JSON.stringify(list.slice(0,5)));
     }
 
     function showLocalBoard() {
-      const list = JSON.parse(localStorage.getItem("scores") || "[]");
+      const list = JSON.parse(localStorage.getItem('scores') || '[]');
       if (!list.length) {
-        localBoardEl.innerHTML = "<li>No records yet.</li>";
+        localBoardEl.innerHTML = '<li>No records yet.</li>';
         return;
       }
-      localBoardEl.innerHTML = list.map(t => `<li>${t} ms</li>`).join("");
+      localBoardEl.innerHTML = list.map(t => `<li>${t} ms</li>`).join('');
     }
 
-    // ─── 12) Firestore: Score hochladen ───
-    async function maybeSendToCloud(time) {
-      if (!navigator.onLine) return queueOffline(time);
-      try {
-        await addDoc(scoresRef, {
-          name: playerName,
-          time,
-          ts: Date.now()
-        });
-        await loadGlobalBoard();
-        flushOfflineQueue();
-      } catch (err) {
-        console.error("Firestore write failed:", err);
-        queueOffline(time);
-      }
-    }
-
-    // ─── 13) Offline-Queue ───
-    function queueOffline(time) {
-      const q = JSON.parse(localStorage.getItem("queued") || "[]");
-      q.push(time);
-      localStorage.setItem("queued", JSON.stringify(q));
-    }
-    async function flushOfflineQueue() {
-      const q = JSON.parse(localStorage.getItem("queued") || "[]");
-      if (!q.length || !navigator.onLine) return;
-      for (const t of q) {
-        await maybeSendToCloud(t);
-      }
-      localStorage.removeItem("queued");
-    }
-
-    // ─── 14) Firestore: Top 10 global laden ───
-    async function loadGlobalBoard() {
-      try {
-        const q = query(scoresRef, orderBy("time"), limit(10));
-        const snap = await getDocs(q);
-        if (snap.empty) {
-          globalBoardEl.innerHTML = "<li>No global scores yet.</li>";
-          return;
-        }
-        globalBoardEl.innerHTML = snap.docs.map(doc => {
-          const d = doc.data();
-          return `<li>${d.name}: <strong>${d.time} ms</strong></li>`;
-        }).join("");
-      } catch (err) {
-        console.error("Firestore read failed:", err);
-        globalBoardEl.innerHTML = "<li>Could not load leaderboard.</li>";
-      }
-    }
-    refreshBtn.addEventListener("click", loadGlobalBoard);
-
-    // Wenn wieder online, Offline-Queue abarbeiten
-    window.addEventListener("online", flushOfflineQueue);
-
-    // ─── 15) Service Worker registrieren ───
+    // Service Worker registrieren
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').catch(err => console.error('SW error:', err));
+        navigator.serviceWorker
+          .register('sw.js')
+          .catch(err => console.error('SW registration failed', err));
       });
     }
   </script>
